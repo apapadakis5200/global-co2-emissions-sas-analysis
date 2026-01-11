@@ -1,1 +1,68 @@
+/* Import CO₂ emissions data from CSV into SAS */
+filename mydata '/home/u63770275/C02EmissionPerCountry.csv';
 
+proc import datafile=mydata
+            out=co2_data
+            dbms=csv
+            replace;
+    getnames=yes;
+run;
+
+
+/* -------------------------------
+   Exploratory Correlation Analysis
+   Examines linear relationships between CO₂ emissions across years
+-------------------------------- */
+proc corr data = co2_data;
+run;
+
+
+/* -----------------------------------------
+   Scatterplot Matrix of Emissions by Year
+   Visualizes pairwise relationships and trends
+------------------------------------------ */
+proc sgscatter data = co2_data;
+    matrix x1990 x2000 x2005 x2015 x2019 x2020 x2021;
+run;
+
+
+/* -----------------------------------------
+   1990 vs 2021 Emissions Comparison
+   Highlights long-term changes and outliers
+------------------------------------------ */
+proc sgscatter data = co2_data;
+    plot x1990 * x2021 / datalabel=country;
+run;
+
+
+/* -----------------------------------------
+   Principal Component Analysis (PCA)
+   Reduces dimensionality of multi-year CO₂ data
+------------------------------------------ */
+proc princomp data = co2_data out = pca_result;
+    var x1990 x2000 x2005 x2015 x2019 x2020 x2021;
+run;
+quit;
+
+
+/* -----------------------------------------
+   PCA Visualization
+   Plots first two principal components
+------------------------------------------ */
+proc sgplot data = pca_result;
+    scatter x=prin1 y=prin2 / datalabel=country;
+run;
+quit;
+
+
+/* -----------------------------------------
+   Aggregate CO₂ Emissions by Country (1990)
+   Summarizes total emissions at the country level
+------------------------------------------ */
+proc sql;
+    create table co2_total as
+    select country,
+           sum(x1990) as total_emission_1990
+    from co2_data
+    group by country;
+quit;
